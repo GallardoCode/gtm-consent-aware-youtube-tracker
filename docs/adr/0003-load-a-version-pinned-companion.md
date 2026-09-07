@@ -1,0 +1,3 @@
+# Load a version-pinned companion from the template
+
+The template will automatically load a page-context companion from jsDelivr at a full Git commit SHA in this repository, because the documented sandbox APIs cannot perform the required iframe and player work directly. Before publishing each Gallery version, fetch the exact companion URL and verify its bytes against the committed artifact, both to check delivery and to have jsDelivr retrieve the file before users depend on it. Keep each published URL fixed and document the CDN dependency: jsDelivr's retained copies provide resilience against repository deletion, while future service availability remains external to this project.

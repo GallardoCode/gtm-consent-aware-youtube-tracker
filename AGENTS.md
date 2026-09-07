@@ -13,3 +13,7 @@ Use the default triage labels. Before triaging or applying labels, read `docs/ag
 ### Domain docs
 
 Use a single context with root `CONTEXT.md` and `docs/adr/`. Before exploring the codebase or proposing changes, read `docs/agents/domain.md`.
+
+## Shared workflow
+
+Before starting repository work, read and follow [the shared workflow](docs/agents/workflow.md).

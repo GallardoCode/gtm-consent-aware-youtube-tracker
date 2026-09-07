@@ -1,0 +1,3 @@
+# Separate YouTube activation and analytics permission
+
+Use independent permissions for YouTube activation and playback analytics so visitors can watch without permitting analytics. In Consent Mode, require analytics_storage by default before this tracker loads the IFrame API, attaches player listeners, or emits playback events, with additional consent requirements configurable. Optional inert activation requires an installer-selected YouTube consent condition drawn from the site's existing CMP signals, without inventing a standard media consent category or imposing it on existing live iframes.
