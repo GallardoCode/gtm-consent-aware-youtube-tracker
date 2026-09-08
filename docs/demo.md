@@ -52,3 +52,5 @@ The browser suite executes the actual exported template code and companion toget
 The fixture records external requests with Playwright's request event before routing responses. Its baseline contains an existing iframe navigation and image request. Denied tracker execution must add no external request. It also compares cookies and iframe markup independently. These controlled responses do not reproduce YouTube's actual traffic or cookie behavior. A blocked request is still an attempt. Existing iframe requests and cookies can precede consent independently of this tracker; withdrawal cannot undo them or in-flight traffic.
 
 The local template runner executes the six exported tests and checks that the code, tests, and narrow permission declarations match their sources. It does not reproduce Google's sandbox. Actual import, Run Code, permission enforcement, and Preview require the wizard and must be recorded as pending until a maintainer completes them. This slice is not a Gallery release.
+
+The [issue #2 verification record](verification-issue-2.md) records the tested source, real-player checks, CDN checksum, review results, and remaining GTM account checks.

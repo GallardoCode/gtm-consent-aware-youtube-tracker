@@ -33,7 +33,7 @@ const addConsentListener = require('addConsentListener');
 const injectScript = require('injectScript');
 const callInWindow = require('callInWindow');
 const templateStorage = require('templateStorage');
-const companionUrl = 'https://cdn.jsdelivr.net/gh/GallardoCode/gtm-consent-aware-youtube-tracker@d649ef1c622ff2f6afe2d22222518c662b0a45bd/companion/youtube-tracker.js';
+const companionUrl = 'https://cdn.jsdelivr.net/gh/GallardoCode/gtm-consent-aware-youtube-tracker@ec54ced8ce500e7828c8ac7618232c4c41ba7c78/companion/youtube-tracker.js';
 
 let state = templateStorage.getItem('tracker');
 if (!state) {
@@ -132,7 +132,7 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://cdn.jsdelivr.net/gh/GallardoCode/gtm-consent-aware-youtube-tracker@d649ef1c622ff2f6afe2d22222518c662b0a45bd/companion/youtube-tracker.js"
+                "string": "https://cdn.jsdelivr.net/gh/GallardoCode/gtm-consent-aware-youtube-tracker@ec54ced8ce500e7828c8ac7618232c4c41ba7c78/companion/youtube-tracker.js"
               }
             ]
           }
