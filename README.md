@@ -4,7 +4,7 @@ A Community Template for GTM web containers, designed to load the YouTube IFrame
 
 ## Current status
 
-Issue [#2](https://github.com/GallardoCode/gtm-consent-aware-youtube-tracker/issues/2) implements the first working slice. Import [`template.tpl`](template.tpl) to observe `custom_video` play events from one existing API-enabled iframe. Native Consent Mode requires `analytics_storage`. Withdrawal removes the playback listener; regrant observes the current position.
+Issue [#2](https://github.com/GallardoCode/gtm-consent-aware-youtube-tracker/issues/2) implements the first working slice. Import [`template.tpl`](template.tpl) to observe `custom_video` play events from one existing API-enabled iframe. Native Consent Mode requires `analytics_storage`. Withdrawal disables playback observation; regrant observes the current position.
 
 This is an implementation slice, not the full first release or a Gallery publication. Explicit consent inputs, additional consent types, multiple and dynamic embeds, inert activation, configurable events, pause/completion/progress reporting, and live-stream metadata remain in parent [#1](https://github.com/GallardoCode/gtm-consent-aware-youtube-tracker/issues/1). Use the slice with one ordinary, fixed-duration video present at DOM Ready.
 

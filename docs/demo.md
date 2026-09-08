@@ -37,7 +37,7 @@ The optional YouTube title lookup falls back to the iframe's `title`, then `YouT
 
 ## Delivery and bridge
 
-`template/sandbox.js` owns consent and shares initialization through GTM template storage. `companion/youtube-tracker.js` defines the named page function `consentAwareYouTube(granted)`. Loading the companion alone does no player work. The template invokes it only with the current consent value, including after a delayed download. Withdrawal removes the playback listener and cancels readiness polling. The player wrapper remains so regrant can reuse it without interrupting the existing iframe.
+`template/sandbox.js` owns consent and shares initialization through GTM template storage. `companion/youtube-tracker.js` defines the named page function `consentAwareYouTube(granted)`. Loading the companion alone does no player work. The template invokes it only with the current consent value, including after a delayed download. Withdrawal replaces the named analytics callback with a no-op and cancels readiness polling. One player subscription remains dormant until regrant. YouTube retains its parent subscription after a removal command, so the companion registers only once and reuses it. Regrant checks current player state before accepting a queued event. The player wrapper remains so regrant does not interrupt the existing iframe.
 
 The companion waits separately for `YT.Player` readiness and preserves the page's existing API-ready callback. It reuses an existing `iframe_api` or `player_api` script. Its own failed API download can retry on the next tag execution or grant. Companion injection failure can also retry on the next execution or grant.
 

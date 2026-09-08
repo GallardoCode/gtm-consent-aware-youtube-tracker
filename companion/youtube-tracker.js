@@ -1,8 +1,7 @@
 // @ts-check
 (function () {
   /** @typedef {{getPlayerState(): number, getCurrentTime(): number, getDuration(): number,
-   * getVideoData?: () => {title?: unknown}, addEventListener(type: string, name: string): void,
-   * removeEventListener(type: string, name: string): void}} Player */
+   * getVideoData?: () => {title?: unknown}, addEventListener(type: string, name: string): void}} Player */
   /** @typedef {{target: Player, data?: number}} PlayerEvent */
   /** @type {Window & typeof globalThis & {
    * consentAwareYouTube?: (granted: boolean) => void,
@@ -20,6 +19,7 @@
   var player;
   var playerReady = false;
   var listening = false;
+  var observing = false;
   var playing = false;
   var epoch = 0;
   var apiTimer = 0;
@@ -55,15 +55,20 @@
   }
 
   function observe() {
-    if (!granted || !playerReady || !player || listening) return;
-    listening = true;
+    if (!granted || !playerReady || !player || observing) return;
+    observing = true;
     var observation = epoch;
     page.__consentAwareYouTubeState = function (event) {
       if (!granted || observation !== epoch || event.target !== player) return;
+      // YouTube resolves named callbacks at dispatch time, even for queued events.
+      if (event.data !== player.getPlayerState()) return;
       if (event.data === 1 && !playing) reportPlay();
       playing = event.data === 1;
     };
-    player.addEventListener('onStateChange', listenerName);
+    if (!listening) {
+      player.addEventListener('onStateChange', listenerName);
+      listening = true;
+    }
     playing = player.getPlayerState() === 1;
     if (playing) reportPlay();
   }
@@ -132,8 +137,7 @@
     if (!granted) {
       page.clearTimeout(apiTimer);
       apiTimer = 0;
-      if (listening && player) player.removeEventListener('onStateChange', listenerName);
-      listening = false;
+      observing = false;
       playing = false;
       page.__consentAwareYouTubeState = function () {};
       return;

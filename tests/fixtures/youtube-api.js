@@ -11,7 +11,7 @@ window.playerFixture = {
       constructor(iframe, options) {
         this.iframe = iframe;
         this.options = options;
-        this.listeners = new Map();
+        this.listeners = new Set();
         window.playerFixture.players.push(this);
         if (window.playerFixture.autoReady) setTimeout(() => this.ready(), 0);
       }
@@ -26,9 +26,10 @@ window.playerFixture = {
       }
       addEventListener(type, name) {
         if (typeof name !== 'string') throw new Error('Use the documented named listener API');
-        this.listeners.set(name, window[name]);
+        this.listeners.add((...args) => window[name](...args));
       }
-      removeEventListener(type, name) { this.listeners.delete(name); }
+      // The real widget forwards removal to the iframe, retaining its parent subscription.
+      removeEventListener() {}
       play(time = 12.4) {
         window.playerFixture.state = 1;
         window.playerFixture.time = time;

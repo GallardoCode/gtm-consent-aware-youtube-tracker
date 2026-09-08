@@ -58,7 +58,7 @@ test('denial preserves the existing iframe baseline; grant emits a prototype-com
   expect(await context.cookies()).toEqual(cookies);
 });
 
-test('withdrawal detaches observation; regrant reports only the current position and reuses initialization', async ({ page }) => {
+test('withdrawal stops observation; regrant reports only the current position and reuses initialization', async ({ page }) => {
   const attempted = await fixture(page);
   await consent(page, true);
   await run(page);
@@ -73,7 +73,7 @@ test('withdrawal detaches observation; regrant reports only the current position
   });
   expect(await events(page)).toHaveLength(1);
   await consent(page, false);
-  expect(await page.evaluate(() => window.playerFixture.players[0].listeners.size)).toBe(0);
+  expect(await page.evaluate(() => window.playerFixture.players[0].listeners.size)).toBe(1);
   const afterWithdrawal = [...attempted];
   await page.evaluate(() => {
     const player = window.playerFixture.players[0];
