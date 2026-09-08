@@ -1,0 +1,66 @@
+scenarios:
+- name: Denied consent registers a watcher without loading
+  code: |-
+    mock('isConsentGranted', false);
+    runCode({});
+    assertApi('addConsentListener').wasCalled();
+    assertApi('injectScript').wasNotCalled();
+    assertApi('callInWindow').wasNotCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+- name: A saved grant loads and calls the named bridge
+  code: |-
+    mock('isConsentGranted', true);
+    mock('injectScript', function(url, success) { success(); });
+    runCode({});
+    assertApi('injectScript').wasCalled();
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', true);
+- name: Later grant and withdrawal both reach the companion
+  code: |-
+    let granted = false;
+    let listener;
+    mock('isConsentGranted', function() { return granted; });
+    mock('addConsentListener', function(type, callback) {
+      assertThat(type).isEqualTo('analytics_storage');
+      listener = callback;
+    });
+    mock('injectScript', function(url, success) { success(); });
+    runCode({});
+    granted = true;
+    listener('analytics_storage', true);
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', true);
+    granted = false;
+    listener('analytics_storage', false);
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', false);
+- name: Download completion reads current consent after withdrawal
+  code: |-
+    let granted = true;
+    let loaded;
+    let listener;
+    mock('isConsentGranted', function() { return granted; });
+    mock('addConsentListener', function(type, callback) { listener = callback; });
+    mock('injectScript', function(url, success) { loaded = success; });
+    runCode({});
+    granted = false;
+    listener('analytics_storage', false);
+    loaded();
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', false);
+- name: Repeat execution reuses the watcher and pending download
+  code: |-
+    let listeners = 0;
+    let downloads = 0;
+    mock('isConsentGranted', true);
+    mock('addConsentListener', function() { listeners++; });
+    mock('injectScript', function() { downloads++; });
+    runCode({});
+    runCode({});
+    assertThat(listeners).isEqualTo(1);
+    assertThat(downloads).isEqualTo(1);
+- name: A failed companion download can retry on the next execution
+  code: |-
+    let downloads = 0;
+    mock('isConsentGranted', true);
+    mock('injectScript', function(url, success, failure) { downloads++; failure(); });
+    runCode({});
+    runCode({});
+    assertThat(downloads).isEqualTo(2);
+    assertApi('callInWindow').wasNotCalled();

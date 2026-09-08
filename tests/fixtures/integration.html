@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Controlled tracker fixture</title>
+<body>
+<script>
+  window.dataLayer = [];
+  document.cookie = 'fixture_baseline=present; SameSite=Lax; path=/';
+  const options = new URLSearchParams(location.search);
+  const iframe = document.createElement('iframe');
+  iframe.title = options.get('title') || '';
+  iframe.width = '560';
+  iframe.height = '315';
+  if (options.has('exclude')) iframe.setAttribute('data-consent-youtube-exclude', '');
+  iframe.src = 'https://www.' + (options.get('host') || 'youtube.com') +
+    '/embed/M7lc1UVf-VE?enablejsapi=' + (options.get('api') || '1') +
+    '&origin=' + encodeURIComponent(options.get('origin') || location.origin);
+  document.body.append(iframe);
+</script>
+<script src="/gtm-adapter.js"></script>
+</body>
+</html>

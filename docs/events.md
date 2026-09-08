@@ -1,6 +1,6 @@
 # Playback events
 
-This is the agreed event contract for the planned GTM template. The current prototype does not implement all of it. See the [GTM setup guide](developer-guide.md) for consent and triggers.
+The issue #2 slice emits only `custom_video` with `video_status: "play"`, including observation start during playback and later play transitions. It uses the fields below, query-stripped iframe URLs, and the iframe `title` as the developer fallback. There is no iframe identifier, configuration, or live-stream handling yet. The remainder of this page describes the full first-release contract. See the [GTM setup guide](developer-guide.md) for consent and triggers.
 
 The default data-layer event is `custom_video`. You can change the name, choose event types, and configure progress milestones. The default milestones are 25%, 50%, and 75%.
 

@@ -1,6 +1,6 @@
 # Verification and maintenance
 
-This is the planned verification procedure for the agreed design. The template, companion, and product tests have not been implemented. A local browser feasibility probe passed, but it did not test tracker behavior.
+The issue #2 slice now has executable template and browser tests. Run `npm run typecheck`, `npm run test:template`, and `npm run test:browser`; `npm test` runs both suites. See the [slice demo and evidence](demo.md) for its supported scope and the remaining real GTM checks. The broader procedure below applies to the complete first-release design.
 
 ## Automated local checks
 
