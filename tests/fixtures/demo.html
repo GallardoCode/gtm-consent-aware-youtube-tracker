@@ -72,7 +72,10 @@
     document.getElementById('repeat').onclick = () => container ?
       window.dataLayer.push({ event: 'tracker_demo_repeat' }) : window.fixture.runTemplate();
     setInterval(() => {
-      const events = window.dataLayer.filter((item) => item.event === 'custom_video');
+      const events = window.dataLayer
+        .map((item) => typeof item?.getUntrustedMessageValue === 'function' ?
+          item.getUntrustedMessageValue() : item)
+        .filter((item) => item?.event === 'custom_video');
       document.getElementById('event-count').textContent = events.length +
         (events.length === 1 ? ' event.' : ' events.') + ' Newest first.';
       document.getElementById('events').textContent = JSON.stringify(events.reverse(), null, 2);
