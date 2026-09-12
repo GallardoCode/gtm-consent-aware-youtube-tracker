@@ -38,7 +38,7 @@ Standards: 0 remaining findings. Spec: 0 remaining findings.
 
 ## Remaining human verification
 
-The maintainer imported the template and ran its six editor tests on 2026-09-12. Four failed because test scenarios shared initialization state; see the follow-up below. The corrected editor tests, Run Code, and container Preview still need maintainer verification. Their prepared procedure is `bash scripts/verify-gtm.sh`. Complete it in a dedicated test workspace and retain its observations before treating this as a validated GTM installation. Account permission checks are not established by the local template runner or the real YouTube probe.
+The maintainer imported the corrected template and confirmed all six editor tests passing on 2026-09-12 at 13:53:42, as displayed by GTM. This confirms the test-isolation fix described below. Run Code and container Preview still need maintainer verification. Their prepared procedure is `bash scripts/verify-gtm.sh`. Complete it in a dedicated test workspace and retain its observations before treating this as a validated GTM installation. Account permission checks are not established by the local template runner or the real YouTube probe.
 
 This is an implementation slice. No Gallery release or container publication was performed.
 
@@ -48,6 +48,6 @@ The maintainer reported two non-function listener errors, a listener count of ze
 
 Each embedded scenario now calls `require('templateStorage').clear()` once before its first `runCode` call. Storage remains shared between calls within a scenario, so the repeated-execution checks still exercise initialization reuse. The local runner now retains storage across scenarios to catch this regression. This reset is test setup only; production initialization and the companion pin are unchanged. [Google's template storage API](https://developers.google.com/tag-platform/tag-manager/templates/api#templatestorage)
 
-The corrected template scenarios, export check, and 15 browser cases pass locally, 22 checks total. Type checking also passes. Reimport the updated root template into the same GTM Template Editor and rerun all six tests to confirm in Google's sandbox.
+The corrected template scenarios, export check, and 15 browser cases pass locally, 22 checks total. Type checking also passes. The maintainer then reran the corrected tests in Google's editor and reported `Executed 6 tests (SUCCESS)` at 13:53:42 on 2026-09-12. All six named scenarios passed. This is maintainer-supplied GTM evidence; mocked test calls still do not establish actual permission enforcement or playback behavior in container Preview.
 
 Updated template SHA-256: `073ed870cbac9adee0847fa5f8dcac4d908eeadd8cb2954eaca52f97488f8158`.
