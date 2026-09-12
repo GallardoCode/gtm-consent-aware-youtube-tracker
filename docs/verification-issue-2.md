@@ -53,3 +53,9 @@ The corrected template scenarios, export check, and 15 browser cases pass locall
 Updated template SHA-256: `073ed870cbac9adee0847fa5f8dcac4d908eeadd8cb2954eaca52f97488f8158`.
 
 The subsequent Run Code check, reported by the maintainer at 13:55:03 on 2026-09-12, printed `Test started` and `Executed 1 test (SUCCESS)`. This records successful editor execution. Live-page consent changes, companion delivery under container permissions, and playback output remain to be checked in Preview.
+
+## Preview connection investigation, 2026-09-12
+
+The maintainer reached the demo page, but Tag Assistant reported the container not found. An independent Chromium check of the exact demo URL requested the configured `gtm.js`, received HTTP 200, initialized the matching entry in `window.google_tag_manager`, and recorded `gtm.js`, `gtm.dom`, and `gtm.load` with no page errors. The demo used its denied-default path. This check had no authenticated Preview session and does not resolve the maintainer's connection failure.
+
+The next evidence needed is the demo URL and the `gtm.js` request status in the maintainer's Preview-opened browser tab. Browser blocking or a Preview connection problem remains unconfirmed. [Google's connection troubleshooting](https://support.google.com/tagassistant/answer/10039345?hl=en)
