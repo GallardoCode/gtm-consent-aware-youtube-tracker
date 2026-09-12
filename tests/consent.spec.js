@@ -25,7 +25,7 @@ async function fixture(page, query = '') {
 }
 
 const events = (page) => page.evaluate(() => window.dataLayer);
-const run = (page) => page.evaluate(() => window.fixture.runTemplate());
+const run = (page, config = {}) => page.evaluate((config) => window.fixture.runTemplate(config), config);
 const consent = (page, value) => page.evaluate((value) => window.fixture.setConsent(value), value);
 const ready = (page) => expect.poll(() => page.evaluate(() =>
   window.playerFixture?.players[0]?.listeners.size)).toBe(1);
@@ -224,3 +224,125 @@ test('a shared loading API script is reused', async ({ page }) => {
   await ready(page);
   expect(attempted.filter((url) => url.endsWith('/iframe_api'))).toHaveLength(1);
 });
+
+const explicit = (page, trackingGranted, activationGranted = false) =>
+  run(page, {consentMode: 'explicit', trackingGranted, activationGranted});
+
+test('explicit inputs deny invalid values, preserve withdrawal, and reuse observation on repeated events', async ({ page }) => {
+  const attempted = await fixture(page);
+  await consent(page, true);
+  const baseline = [...attempted];
+  const invalid = [undefined, null, false, 'true', 'false', 'granted', 1, 0, {}, []];
+  for (const value of invalid) await explicit(page, value, true);
+  await page.waitForTimeout(150);
+  expect(attempted).toEqual(baseline);
+  expect(await events(page)).toEqual([]);
+
+  // The consent-update execution precedes the selected page trigger.
+  await explicit(page, true);
+  await ready(page);
+  await page.evaluate(() => window.playerFixture.players[0].play(20));
+  await explicit(page, true);
+  await explicit(page, true, true);
+  expect((await events(page)).map(event => event.video_current_time)).toEqual([20]);
+  for (const value of invalid) {
+    await explicit(page, value, true);
+    await page.evaluate(() => {
+      window.playerFixture.players[0].pause();
+      window.playerFixture.players[0].play(70);
+    });
+  }
+  expect(await events(page)).toHaveLength(1);
+  await explicit(page, true);
+  expect((await events(page)).map(event => event.video_current_time)).toEqual([20, 70]);
+  expect(await page.evaluate(() => window.playerFixture.players.length)).toBe(1);
+  expect(await page.evaluate(() => window.fixture.consentListenerCount())).toBe(0);
+  expect(attempted.filter(url => url.includes('cdn.jsdelivr.net'))).toHaveLength(1);
+});
+
+test('explicit saved consent observes current playback despite denied native consent', async ({ page }) => {
+  await fixture(page);
+  await page.addScriptTag({content: apiSource});
+  await page.evaluate(() => { window.playerFixture.state = 1; window.playerFixture.time = 45; });
+  await explicit(page, true);
+  await ready(page);
+  expect((await events(page)).map(event => event.video_current_time)).toEqual([45]);
+});
+
+test('native partial grants and withdrawals reevaluate all requirements through playback', async ({ page }) => {
+  const attempted = await fixture(page);
+  const config = {additionalConsentTypes: [{consentType: 'ad_storage'}, {consentType: 'ad_user_data'}],
+    activationConsentType: 'functionality_storage'};
+  const nativeConsent = (type, value) => page.evaluate(({type, value}) => window.fixture.setConsent(value, type), {type, value});
+  await nativeConsent('ad_storage', false);
+  await nativeConsent('ad_user_data', false);
+  await nativeConsent('functionality_storage', false);
+  await run(page, config);
+  await consent(page, true);
+  await nativeConsent('ad_storage', true);
+  expect(attempted.filter(url => url.includes('cdn.jsdelivr.net'))).toHaveLength(0);
+  await nativeConsent('ad_user_data', true);
+  await ready(page);
+  await page.evaluate(() => window.playerFixture.players[0].play(20));
+  for (const type of ['analytics_storage', 'ad_storage', 'ad_user_data']) {
+    const count = (await events(page)).length;
+    await nativeConsent(type, false);
+    await page.evaluate(() => {
+      window.playerFixture.players[0].pause();
+      window.playerFixture.players[0].play(70);
+    });
+    expect(await events(page)).toHaveLength(count);
+    await nativeConsent(type, true);
+    expect(await events(page)).toHaveLength(count + 1);
+  }
+  const count = (await events(page)).length;
+  await nativeConsent('functionality_storage', true);
+  await nativeConsent('functionality_storage', false);
+  await run(page, {...config, additionalConsentTypes: [...config.additionalConsentTypes].reverse()});
+  expect(await events(page)).toHaveLength(count);
+  expect(await page.evaluate(() => window.fixture.consentListenerCount())).toBe(4);
+  expect(await page.evaluate(() => window.playerFixture.players.length)).toBe(1);
+});
+
+for (const stage of ['companion', 'api', 'player']) {
+  test(`explicit withdrawal during ${stage} loading cannot be undone by completion`, async ({ page }) => {
+    await page.addInitScript(() => { window.deferApiReady = true; });
+    const attempted = await fixture(page);
+    let release;
+    if (stage === 'companion') {
+      const held = new Promise(resolve => { release = resolve; });
+      await page.route('https://cdn.jsdelivr.net/**', async route => {
+        await held;
+        await route.fulfill({path: 'companion/youtube-tracker.js', contentType: 'text/javascript'});
+      });
+    }
+    await explicit(page, true);
+    if (stage === 'companion') {
+      await expect.poll(() => attempted.filter(url => url.includes('cdn.jsdelivr.net')).length).toBe(1);
+      await explicit(page, false);
+      release();
+      await page.waitForFunction(() => window.consentAwareYouTube);
+      expect(attempted.filter(url => url.endsWith('/iframe_api'))).toHaveLength(0);
+    } else {
+      await page.waitForFunction(() => window.playerFixture);
+      if (stage === 'player') {
+        await page.evaluate(() => { window.playerFixture.autoReady = false; window.playerFixture.install(); });
+        await expect.poll(() => page.evaluate(() => window.playerFixture.players.length)).toBe(1);
+      }
+      await explicit(page, false);
+      await page.evaluate((stage) => stage === 'api' ? window.playerFixture.install() :
+        window.playerFixture.players[0].ready(), stage);
+    }
+    await page.waitForTimeout(150);
+    expect(await events(page)).toEqual([]);
+    expect(await page.evaluate(() => window.playerFixture?.players[0]?.listeners.size || 0)).toBe(0);
+    await explicit(page, true);
+    if (stage === 'companion') {
+      await page.waitForFunction(() => window.playerFixture);
+      await page.evaluate(() => window.playerFixture.install());
+    }
+    await ready(page);
+    await page.evaluate(() => window.playerFixture.players[0].play(70));
+    expect((await events(page)).map(event => event.video_current_time)).toEqual([70]);
+  });
+}

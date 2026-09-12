@@ -1,6 +1,6 @@
 # Install and verify the first slice
 
-This implements issue #2, the first path through the larger [first-release spec](https://github.com/GallardoCode/gtm-consent-aware-youtube-tracker/issues/1). It observes one existing API-enabled iframe and emits `custom_video` play events. All settings are fixed for this slice: native `analytics_storage`, the standard `dataLayer`, and the `custom_video` event name.
+This implements issues #2 and #3, the first path through the larger [first-release spec](https://github.com/GallardoCode/gtm-consent-aware-youtube-tracker/issues/1). It observes one existing API-enabled iframe and emits `custom_video` play events. Consent can use native requirements or explicit CMP booleans. The standard `dataLayer` and `custom_video` event name remain fixed.
 
 ## Local commands
 
@@ -14,13 +14,13 @@ npm test
 npm run demo
 ```
 
-Open http://127.0.0.1:4173. The default demo uses the local companion, real YouTube, and a model of the GTM consent APIs. Press Play, grant analytics, withdraw, then regrant. The event panel shows a count and the newest event first. Its count should stop increasing on withdrawal. Regrant while the video is playing should add one event at the current position; read the first entry's `video_current_time`. Use `?consent=granted` for a saved grant and `?host=youtube.com` for the ordinary host. The default uses privacy-enhanced mode.
+Open http://127.0.0.1:4173. The default demo uses the local companion, real YouTube, and a model of the GTM consent APIs. Press Play, grant analytics, withdraw, then regrant. The event panel shows a count and the newest event first. Its count should stop increasing on withdrawal. Regrant while the video is playing should add one event at the current position; read the first entry's `video_current_time`. Use `?consent=granted` for a saved grant and `?host=youtube.com` for the ordinary host. The default uses privacy-enhanced mode. Add `?mode=explicit` to exercise CMP booleans, or `?mode=explicit&consent=granted` for saved explicit consent. The same buttons push `tracker_demo_consent` with the current `tracker_analytics` boolean and `tracker_youtube: false`.
 
 ## Import into a test GTM workspace
 
 1. Run `bash scripts/verify-gtm.sh`. It guides the account and Preview steps and records your observations in ignored `.env.gtm-demo`. Keep the demo server running in another terminal.
 2. In a dedicated web-container workspace, open Templates, create a new tag template, and use the editor's More Actions menu to import root `template.tpl`. [Google's import example](https://codelabs.developers.google.com/codelabs/web-vitals-ga4-publisher)
-3. Inspect Permissions. Expect read access only to `analytics_storage`, script injection for one exact jsDelivr URL, execute access only to `consentAwareYouTube`, and template storage. Follow [the editor test steps below](#run-the-tests-after-import) for the six imported tests and the separate Run Code check.
+3. Inspect Permissions. Expect read-only access to the seven [declared native types](developer-guide.md#native-consent-requirements), script injection for one exact jsDelivr URL, execute access only to `consentAwareYouTube`, template storage, and debug-only console logging. Follow [the editor test steps below](#run-the-tests-after-import) for the 12 imported tests and the separate Run Code check.
 4. Create one tag using this template. Fire on DOM Ready, all pages, with Once per event and Additional Consent Checks set to **No additional consent required**. Add a Custom Event trigger for `tracker_demo_repeat` to exercise the Repeat button. Tag success means the consent watcher is registered, not that YouTube is ready.
 5. Open Preview and connect to `http://127.0.0.1:4173/?gtm=GTM-YOURID`. The demo establishes denied page defaults before loading that container. This mode uses the real template and pinned CDN companion. Inspect the first tracker event's Consent tab. Grant, play, withdraw, and regrant using the page buttons. Inspect network attempts, iframe behavior, cookies, and data-layer events. [Google's Preview procedure](https://support.google.com/tagmanager/answer/6107056?hl=en)
 6. Repeat with `&consent=granted` and `&host=youtube.com`. In a separate test page, verify your CMP consent template's defaults on Consent Initialization and its saved-choice and withdrawal behavior. Keep that page's defaults coordinated with its CMP.
@@ -33,13 +33,19 @@ GTM keeps a copy of the `.tpl` file at import time. Editing or pushing the repos
 
 Open **Templates** in the workspace's left navigation, then click the imported tracker under **Tag Templates**. In its Template Editor:
 
-1. Click **Tests**. Six tests should already be listed, starting with `Denied consent registers a watcher without loading` and ending with `A failed companion download can retry on the next execution`. Do not add new tests. An empty list means you should check that the complete root `template.tpl` was imported.
-2. Ensure all six tests are enabled, then click **Run Tests**, the button with a play triangle. It runs every enabled test. No local server, video playback, consent buttons, or tag configuration is needed for these simulated scenarios.
-3. Read the editor's **Console** results. Expect six tests run and zero failures. For a failure, expand the test row and copy its name and the full error. Hover over a row to reveal its individual play button if you want to rerun only that test. [Google's test controls](https://developers.google.com/tag-platform/tag-manager/templates/tests)
-4. Separately, click **Code**, leave the imported code unchanged, then click **Run Code**. This template has no configuration fields to fill in. Check the editor's Console for compilation, runtime, and permission errors. A video event is not expected in the editor. [Google's Run Code instructions](https://developers.google.com/tag-platform/tag-manager/templates)
+1. Click **Tests**. Twelve tests should already be listed, starting with `Denied consent registers a watcher without loading` and ending with `Activation permission stays independent and equivalent native policies reuse listeners`. Do not add new tests. An empty list means you should check that the complete root `template.tpl` was imported.
+2. Ensure all 12 tests are enabled, then click **Run Tests**, the button with a play triangle. It runs every enabled test. No local server, video playback, consent buttons, or tag configuration is needed for these simulated scenarios.
+3. Read the editor's **Console** results. Expect 12 tests run and zero failures. For a failure, expand the test row and copy its name and the full error. Hover over a row to reveal its individual play button if you want to rerun only that test. [Google's test controls](https://developers.google.com/tag-platform/tag-manager/templates/tests)
+4. Separately, click **Code**, leave the imported code unchanged, then click **Run Code**. Select native mode and exercise each additional requirement, then explicit mode with a boolean variable. Check empty table-row validation and the mode-dependent fields. Follow the [issue #3 matrix](verification-issue-3.md#remaining-gtm-checks). Check the editor's Console for compilation, runtime, and permission errors. A video event is not expected in the editor. [Google's Run Code instructions](https://developers.google.com/tag-platform/tag-manager/templates)
 5. Record the two outcomes separately in the wizard. If either fails, retain the error before proceeding to tag configuration. If both pass, click **Save**.
 
-The six tests simulate the external APIs. Mocked calls bypass GTM permission checks, so their success does not replace the later container Preview checks.
+The 12 tests simulate the external APIs. Mocked calls bypass GTM permission checks, so their success does not replace the later container Preview checks.
+
+### Explicit inputs in Preview
+
+Create Version 2 Data Layer Variables for `tracker_analytics` and `tracker_youtube`. Choose **Explicit CMP inputs** in the tracker tag and select those variables for the corresponding permissions. Add a Custom Event trigger for `tracker_demo_consent`, with no grant-only filter, alongside the page trigger and `tracker_demo_repeat`. Use **Once per event**.
+
+Open `http://127.0.0.1:4173/?gtm=GTM-YOURID&mode=explicit`. The demo pushes its initial booleans before the container loads, so the consent event can run before DOM Ready. Grant, withdraw, regrant, and repeat using the page buttons. Inspect the event's variables in Tag Assistant. Repeat with `&consent=granted`. In production, use your site's actual event name and boolean variables as described in the [installation guide](developer-guide.md#explicit-cmp-booleans).
 
 ## Existing iframe prerequisites
 
@@ -65,6 +71,8 @@ The browser suite executes the actual exported template code and companion toget
 
 The fixture records external requests with Playwright's request event before routing responses. Its baseline contains an existing iframe navigation and image request. Denied tracker execution must add no external request. It also compares cookies and iframe markup independently. These controlled responses do not reproduce YouTube's actual traffic or cookie behavior. A blocked request is still an attempt. Existing iframe requests and cookies can precede consent independently of this tracker; withdrawal cannot undo them or in-flight traffic.
 
-The local template runner executes the six exported tests and checks that the code, tests, and narrow permission declarations match their sources. It does not reproduce Google's sandbox. Actual import, Run Code, permission enforcement, and Preview require the wizard and must be recorded as pending until a maintainer completes them. This slice is not a Gallery release.
+The local template runner executes the 12 exported tests and checks that the code, tests, and narrow permission declarations match their sources. It does not reproduce Google's sandbox. Actual import, Run Code, permission enforcement, and Preview require the wizard and must be recorded as pending until a maintainer completes them. This slice is not a Gallery release.
 
 The [issue #2 verification record](verification-issue-2.md) records the tested source, real-player checks, CDN checksum, review results, and remaining GTM account checks.
+
+The [issue #3 verification record](verification-issue-3.md) covers the new consent modes and the pending native permission and field checks.

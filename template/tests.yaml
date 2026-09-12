@@ -70,3 +70,101 @@ scenarios:
     runCode({});
     assertThat(downloads).isEqualTo(2);
     assertApi('callInWindow').wasNotCalled();
+- name: Explicit inputs require boolean true and update after every execution
+  code: |-
+    require('templateStorage').clear();
+    mock('isConsentGranted', true);
+    mock('injectScript', function(url, success) { success(); });
+    runCode({consentMode: 'explicit', trackingGranted: 'true'});
+    assertApi('injectScript').wasNotCalled();
+    runCode({consentMode: 'explicit', trackingGranted: true});
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', true);
+    runCode({consentMode: 'explicit', trackingGranted: false});
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', false);
+    assertApi('addConsentListener').wasNotCalled();
+- name: Every native requirement is reread on partial grants and withdrawals
+  code: |-
+    require('templateStorage').clear();
+    let analytics = false;
+    let ads = false;
+    let listeners = {};
+    mock('isConsentGranted', function(type) {
+      return type === 'analytics_storage' ? analytics : ads;
+    });
+    mock('addConsentListener', function(type, callback) { listeners[type] = callback; });
+    mock('injectScript', function(url, success) { success(); });
+    runCode({additionalConsentTypes: [{consentType: 'ad_storage'}]});
+    analytics = true;
+    listeners.analytics_storage('analytics_storage', true);
+    assertApi('injectScript').wasNotCalled();
+    ads = true;
+    listeners.ad_storage('ad_storage', true);
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', true);
+    analytics = false;
+    listeners.analytics_storage('analytics_storage', false);
+    assertApi('callInWindow').wasCalledWith('consentAwareYouTube', false);
+    listeners.ad_storage('ad_storage', true);
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Invalid policies fail before loading or registering consent listeners
+  code: |-
+    const invalid = [
+      {consentMode: 'unknown'}, {consentMode: null},
+      {additionalConsentTypes: 'ad_storage'},
+      {additionalConsentTypes: [null]},
+      {additionalConsentTypes: [{consentType: 'custom_media'}]},
+      {activationConsentType: 'custom_media'}
+    ];
+    mock('isConsentGranted', true);
+    invalid.forEach(function(config) {
+      require('templateStorage').clear();
+      runCode(config);
+    });
+    assertApi('injectScript').wasNotCalled();
+    assertApi('addConsentListener').wasNotCalled();
+    assertApi('gtmOnFailure').wasCalled();
+- name: A conflicting policy is rejected while the original policy still handles withdrawal
+  code: |-
+    require('templateStorage').clear();
+    let last;
+    mock('injectScript', function(url, success) { success(); });
+    mock('callInWindow', function(name, value) { last = value; });
+    runCode({consentMode: 'explicit', trackingGranted: true});
+    runCode({consentMode: 'native'});
+    assertApi('gtmOnFailure').wasCalled();
+    runCode({consentMode: 'explicit', trackingGranted: false});
+    assertThat(last).isFalse();
+- name: Explicit withdrawal during download uses the latest execution values
+  code: |-
+    require('templateStorage').clear();
+    let loaded;
+    let last;
+    mock('injectScript', function(url, success) { loaded = success; });
+    mock('callInWindow', function(name, value) { last = value; });
+    runCode({consentMode: 'explicit', trackingGranted: true});
+    runCode({consentMode: 'explicit', trackingGranted: false, activationGranted: true});
+    loaded();
+    assertThat(last).isFalse();
+    runCode({consentMode: 'explicit', trackingGranted: true});
+    assertThat(last).isTrue();
+- name: Activation permission stays independent and equivalent native policies reuse listeners
+  code: |-
+    require('templateStorage').clear();
+    let analytics = false;
+    let activation = true;
+    let listeners = {};
+    let count = 0;
+    let last;
+    mock('isConsentGranted', function(type) { return type === 'analytics_storage' ? analytics : activation; });
+    mock('addConsentListener', function(type, listener) { listeners[type] = listener; count++; });
+    mock('injectScript', function(url, success) { success(); });
+    mock('callInWindow', function(name, value) { last = value; });
+    runCode({activationConsentType: 'ad_storage'});
+    assertApi('injectScript').wasNotCalled();
+    activation = false;
+    analytics = true;
+    listeners.analytics_storage('analytics_storage', true);
+    assertThat(last).isTrue();
+    listeners.ad_storage('ad_storage', false);
+    assertThat(last).isTrue();
+    runCode({activationConsentType: 'ad_storage', additionalConsentTypes: [{consentType: 'analytics_storage'}]});
+    assertThat(count).isEqualTo(2);

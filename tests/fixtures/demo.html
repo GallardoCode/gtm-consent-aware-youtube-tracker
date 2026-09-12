@@ -12,6 +12,9 @@
     analytics_storage: options.get('consent') === 'granted' ? 'granted' : 'denied',
     ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied'
   });
+  const explicitMode = options.get('mode') === 'explicit';
+  let analyticsGranted = options.get('consent') === 'granted';
+  if (explicitMode) window.dataLayer.push({event: 'tracker_demo_consent', tracker_analytics: analyticsGranted, tracker_youtube: false});
   const container = options.get('gtm');
   if (container && /^GTM-[A-Z0-9]+$/.test(container)) {
     window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
@@ -48,6 +51,10 @@
   iframe.src = 'https://' + host + '/embed/M7lc1UVf-VE?enablejsapi=1&origin=' + encodeURIComponent(location.origin);
   document.getElementById('video').append(iframe);
 
+  function trackerConfig() {
+    return explicitMode ? {consentMode: 'explicit', trackingGranted: analyticsGranted, activationGranted: false} : {};
+  }
+
   async function setup() {
     if (!container) {
       window.fixtureCompanionUrl = '/companion.js';
@@ -57,20 +64,25 @@
         document.head.append(script);
       });
       window.fixture.setConsent(options.get('consent') === 'granted');
-      await window.fixture.runTemplate();
+      await window.fixture.runTemplate(trackerConfig());
     }
     document.getElementById('mode').textContent = container ?
       'Real GTM mode: import template.tpl and connect this page through Preview. Container: ' + container :
       'Local mode: real YouTube with a modelled GTM consent API and local companion. This does not verify GTM permissions.';
+    document.getElementById('mode').textContent += explicitMode ? ' Consent input: explicit CMP booleans.' : ' Consent input: native analytics_storage.';
     function update(granted) {
-      if (container) gtag('consent', 'update', { analytics_storage: granted ? 'granted' : 'denied' });
+      analyticsGranted = granted;
+      if (explicitMode) {
+        window.dataLayer.push({event: 'tracker_demo_consent', tracker_analytics: granted, tracker_youtube: false});
+        if (!container) window.fixture.runTemplate(trackerConfig());
+      } else if (container) gtag('consent', 'update', { analytics_storage: granted ? 'granted' : 'denied' });
       else window.fixture.setConsent(granted);
       document.getElementById('consent').textContent = 'Analytics requested: ' + (granted ? 'granted' : 'denied');
     }
     document.getElementById('grant').onclick = () => update(true);
     document.getElementById('withdraw').onclick = () => update(false);
     document.getElementById('repeat').onclick = () => container ?
-      window.dataLayer.push({ event: 'tracker_demo_repeat' }) : window.fixture.runTemplate();
+      window.dataLayer.push({ event: 'tracker_demo_repeat' }) : window.fixture.runTemplate(trackerConfig());
     setInterval(() => {
       const events = window.dataLayer
         .map((item) => typeof item?.getUntrustedMessageValue === 'function' ?
