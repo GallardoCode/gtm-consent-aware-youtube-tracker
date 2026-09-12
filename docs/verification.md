@@ -1,6 +1,12 @@
 # Verification and maintenance
 
-This is the planned verification procedure for the agreed design. The template, companion, and product tests have not been implemented. A local browser feasibility probe passed, but it did not test tracker behavior.
+The issue #2 slice now has executable template and browser tests. Run `npm run typecheck`, `npm run test:template`, and `npm run test:browser`; `npm test` runs both suites. See the [slice demo and evidence](demo.md) for its supported scope and the remaining real GTM checks. The broader procedure below applies to the complete first-release design.
+
+## Continuous integration
+
+The [CI workflow](../.github/workflows/ci.yml) runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. Its `Tests and typecheck` job uses Ubuntu 24.04 and Node.js 24, installs locked dependencies with `npm ci`, runs type checking, installs Chromium and its system dependencies, and runs the template and browser suites. Browser tests use one worker and retain traces on failure.
+
+Check the job result in the PR's Checks tab. If browser tests fail, download `playwright-failure-report` from the workflow run's Artifacts section. It is retained for seven days. After extracting it, run `npx playwright show-report path/to/playwright-report` to inspect the report. These controlled tests do not require GTM credentials and do not replace the real GTM and YouTube verification below.
 
 ## Automated local checks
 

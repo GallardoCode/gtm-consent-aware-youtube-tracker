@@ -2,7 +2,7 @@
 
 This project targets GTM web containers. CMP-neutral means you can use different consent platforms within GTM.
 
-The template and companion are not implemented yet. This guide describes the intended setup. The current prototype does not enforce consent.
+The [issue #2 implementation slice](demo.md) provides an importable template and companion for one existing iframe, native `analytics_storage`, and play events. This guide also describes the remaining first-release design. Configurable consent, explicit inputs, inert activation, continuous discovery, and full playback reporting are not available in the slice. The original prototype does not enforce consent.
 
 ## 1. Set consent defaults before the tracker runs
 
@@ -81,7 +81,7 @@ Enable API access in the site's markup:
 ></iframe>
 ```
 
-Replace the video ID, title, and encoded site origin. Incompatible iframes will be skipped without reloading playback. Exclude players already controlled by other page JavaScript; the exclusion setting will be documented with the implementation. [YouTube API parameters](https://developers.google.com/youtube/player_parameters#enablejsapi)
+Replace the video ID, title, and encoded site origin. Incompatible iframes will be skipped without reloading playback. Exclude players already controlled by other page JavaScript; add `data-consent-youtube-exclude` to the iframe. [YouTube API parameters](https://developers.google.com/youtube/player_parameters#enablejsapi)
 
 We recommend `youtube-nocookie.com` for privacy-enhanced mode. It limits personalization, but does not guarantee zero requests or cookies. An iframe with `src` can load before consent, independently of this tracker. To delay the player itself, use [optional inert embeds](inert-embeds.md). [YouTube embedding guidance](https://support.google.com/youtube/answer/171780?expand=PrivacyEnhancedMode&hl=en-GB)
 

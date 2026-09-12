@@ -1,0 +1,20 @@
+{
+  "name": "gtm-consent-aware-youtube-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none tests/template.test.js && playwright test",
+    "test:browser": "playwright test",
+    "test:template": "node --test --test-isolation=none tests/template.test.js",
+    "typecheck": "tsc --allowJs --checkJs --noEmit --lib es2022,dom --target es2022 --module nodenext companion/youtube-tracker.js",
+    "demo": "node scripts/serve-demo.js",
+    "template:build": "node scripts/build-template.js",
+    "verify:cdn": "node scripts/verify-cdn.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "typescript": "7.0.2",
+    "yaml": "2.9.0"
+  }
+}

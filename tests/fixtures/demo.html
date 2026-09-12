@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>YouTube tracker demo</title>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { window.dataLayer.push(arguments); }
+  const options = new URLSearchParams(location.search);
+  gtag('consent', 'default', {
+    analytics_storage: options.get('consent') === 'granted' ? 'granted' : 'denied',
+    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied'
+  });
+  const container = options.get('gtm');
+  if (container && /^GTM-[A-Z0-9]+$/.test(container)) {
+    window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtm.js?id=' + container;
+    document.head.append(script);
+  }
+</script>
+<style>
+  body { max-width: 760px; margin: 40px auto; padding: 0 20px; font: 18px/1.5 system-ui; }
+  button { padding: 10px 16px; margin: 12px 8px 12px 0; cursor: pointer; }
+  iframe { max-width: 100%; border: 0; }
+  pre { padding: 16px; background: #f3f3f3; overflow: auto; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>YouTube tracker implementation slice</h1>
+<p id="mode"></p>
+<p>This existing iframe loads independently of analytics consent. Press Play in the video, grant analytics, then withdraw it. Regrant reports the current position.</p>
+<div id="video"></div>
+<button id="grant">Grant analytics</button><button id="withdraw">Withdraw analytics</button>
+<button id="repeat">Execute template again</button>
+<p id="consent"></p>
+<h2>Playback events</h2>
+<p id="event-count">0 events. Newest first.</p>
+<pre id="events">[]</pre>
+<script>
+  const iframe = document.createElement('iframe');
+  iframe.title = 'YouTube IFrame API demonstration';
+  iframe.width = '640'; iframe.height = '360'; iframe.allowFullscreen = true;
+  iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+  const host = options.get('host') === 'youtube.com' ? 'www.youtube.com' : 'www.youtube-nocookie.com';
+  iframe.src = 'https://' + host + '/embed/M7lc1UVf-VE?enablejsapi=1&origin=' + encodeURIComponent(location.origin);
+  document.getElementById('video').append(iframe);
+
+  async function setup() {
+    if (!container) {
+      window.fixtureCompanionUrl = '/companion.js';
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = '/gtm-adapter.js'; script.onload = resolve; script.onerror = reject;
+        document.head.append(script);
+      });
+      window.fixture.setConsent(options.get('consent') === 'granted');
+      await window.fixture.runTemplate();
+    }
+    document.getElementById('mode').textContent = container ?
+      'Real GTM mode: import template.tpl and connect this page through Preview. Container: ' + container :
+      'Local mode: real YouTube with a modelled GTM consent API and local companion. This does not verify GTM permissions.';
+    function update(granted) {
+      if (container) gtag('consent', 'update', { analytics_storage: granted ? 'granted' : 'denied' });
+      else window.fixture.setConsent(granted);
+      document.getElementById('consent').textContent = 'Analytics requested: ' + (granted ? 'granted' : 'denied');
+    }
+    document.getElementById('grant').onclick = () => update(true);
+    document.getElementById('withdraw').onclick = () => update(false);
+    document.getElementById('repeat').onclick = () => container ?
+      window.dataLayer.push({ event: 'tracker_demo_repeat' }) : window.fixture.runTemplate();
+    setInterval(() => {
+      const events = window.dataLayer
+        .map((item) => typeof item?.getUntrustedMessageValue === 'function' ?
+          item.getUntrustedMessageValue() : item)
+        .filter((item) => item?.event === 'custom_video');
+      document.getElementById('event-count').textContent = events.length +
+        (events.length === 1 ? ' event.' : ' events.') + ' Newest first.';
+      document.getElementById('events').textContent = JSON.stringify(events.reverse(), null, 2);
+    }, 250);
+  }
+  setup().catch((error) => { document.getElementById('mode').textContent = error.message; });
+</script>
+</body>
+</html>
