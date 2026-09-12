@@ -36,7 +36,9 @@
 <button id="grant">Grant analytics</button><button id="withdraw">Withdraw analytics</button>
 <button id="repeat">Execute template again</button>
 <p id="consent"></p>
-<h2>Playback events</h2><pre id="events">[]</pre>
+<h2>Playback events</h2>
+<p id="event-count">0 events. Newest first.</p>
+<pre id="events">[]</pre>
 <script>
   const iframe = document.createElement('iframe');
   iframe.title = 'YouTube IFrame API demonstration';
@@ -70,7 +72,10 @@
     document.getElementById('repeat').onclick = () => container ?
       window.dataLayer.push({ event: 'tracker_demo_repeat' }) : window.fixture.runTemplate();
     setInterval(() => {
-      document.getElementById('events').textContent = JSON.stringify(window.dataLayer.filter((item) => item.event === 'custom_video'), null, 2);
+      const events = window.dataLayer.filter((item) => item.event === 'custom_video');
+      document.getElementById('event-count').textContent = events.length +
+        (events.length === 1 ? ' event.' : ' events.') + ' Newest first.';
+      document.getElementById('events').textContent = JSON.stringify(events.reverse(), null, 2);
     }, 250);
   }
   setup().catch((error) => { document.getElementById('mode').textContent = error.message; });

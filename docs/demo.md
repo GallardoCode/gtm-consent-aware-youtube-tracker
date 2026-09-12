@@ -14,7 +14,7 @@ npm test
 npm run demo
 ```
 
-Open http://127.0.0.1:4173. The default demo uses the local companion, real YouTube, and a model of the GTM consent APIs. Press Play, grant analytics, withdraw, then regrant. The event panel should stop on withdrawal and report the current position on regrant. Use `?consent=granted` for a saved grant and `?host=youtube.com` for the ordinary host. The default uses privacy-enhanced mode.
+Open http://127.0.0.1:4173. The default demo uses the local companion, real YouTube, and a model of the GTM consent APIs. Press Play, grant analytics, withdraw, then regrant. The event panel shows a count and the newest event first. Its count should stop increasing on withdrawal. Regrant while the video is playing should add one event at the current position; read the first entry's `video_current_time`. Use `?consent=granted` for a saved grant and `?host=youtube.com` for the ordinary host. The default uses privacy-enhanced mode.
 
 ## Import into a test GTM workspace
 
