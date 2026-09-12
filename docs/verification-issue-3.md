@@ -1,0 +1,46 @@
+# Issue #3 verification record
+
+The issue #3 implementation adds explicit CMP booleans, additional native tracking requirements, and a separate reserved YouTube activation policy. It retains the issue #2 companion and its full commit pin, `ec54ced8ce500e7828c8ac7618232c4c41ba7c78`.
+
+## Automated checks
+
+On 2026-09-12, Node.js 24.18.0 ran the exported template scenarios and Playwright 1.63.0 ran Chromium through the exported template-to-companion boundary. The focused consent suite passed 21 cases and the demo suite passed three cases. Type checking passed. The final full suite passed all 14 local template checks and all 24 browser tests. `git diff --check` and `bash -n scripts/verify-gtm.sh` passed.
+
+The consent cases cover multiple native requirements, partial grants, withdrawal of each requirement, saved and unset native consent, strict explicit boolean validation before and after grant, saved explicit consent, repeated execution, independent activation permission, and explicit withdrawal during companion, API, and player loading. Export checks inspect native field choices and read-only permission declarations. The 12 embedded scenarios are also exported for execution in GTM's Template Editor.
+
+The existing demo server occupied port 4173. Its served template was compared byte-for-byte with this branch, then a temporary Playwright config reused it without stopping the server. Chromium used `LD_LIBRARY_PATH=/tmp/youtube-browser-libs/usr/lib/x86_64-linux-gnu` for the previously extracted audio dependency. These local accommodations are not repository configuration changes.
+
+## Remaining GTM checks
+
+Status: pending. No authenticated GTM editor or Preview session is available to this agent. The preceding issue's maintainer verification does not cover these new fields or permissions. Mocked APIs bypass permission checks and unit tests do not validate fields. [Google's testing limitations](https://developers.google.com/tag-platform/tag-manager/templates/tests)
+
+Use a dedicated test workspace and the current root `template.tpl`. Follow the [import instructions](demo.md#import-into-a-test-gtm-workspace), then record the template checksum, date, and outcome of each check here before merging.
+
+1. Run all 12 imported editor tests. Separately use Run Code with the imported production code, without mocks. Confirm both mode selectors render correctly, native additional rows require a selection, and the explicit selectors accept GTM variables. Test boolean `true`, `false`, a missing variable, and a variable returning the string `"true"`. Only boolean `true` should permit loading in explicit mode.
+2. Inspect Permissions. Confirm read-only access to `analytics_storage`, `ad_storage`, `ad_user_data`, `ad_personalization`, `functionality_storage`, `personalization_storage`, and `security_storage`. Confirm the exact pinned injection URL, execute-only bridge access, template storage, and debug-only logging. There must be no custom-name input or consent-writing API.
+3. Run Code in native mode with all six additional types selected, then try each as the activation type. Inspect the console for permission errors. These unmocked calls exercise the actual declared read permissions. Editor execution alone does not establish live-page playback behavior.
+4. In container Preview, choose native mode with `ad_storage` and `ad_user_data` as additional requirements. Use Once per event and No additional consent required. Open the demo's GTM URL. The demo sets these three types to denied before loading GTM. Grant analytics with the page button. In the page console, call `gtag('consent', 'update', {ad_storage: 'granted'})`. Neither partial grant should load the companion. Then grant `ad_user_data` the same way; playback should now report. Withdraw each selected type in turn and verify playback events stop, then regrant and verify exactly one event at the current position if playing. Check permission errors separately from consent denial.
+5. For the other declared types, set denied defaults in coordinated page code before GTM, select them as additional requirements, reload, and repeat grants and withdrawals in Preview. Test saved grants too. Confirm each selected type's initial state in Tag Assistant. Unset types count as granted; that remains a site configuration responsibility. [Google's consent API](https://developers.google.com/tag-platform/tag-manager/templates/api#isconsentgranted)
+6. Use the [explicit Preview setup](demo.md#explicit-inputs-in-preview). Confirm the queued `tracker_demo_consent` runs before DOM Ready with current boolean variables. Confirm the later page trigger and Repeat button add no duplicate playback events. Verify initial denial, saved grant, grant, withdrawal, and regrant. Test the actual site's CMP using its own event name, including withdrawals with no grant-only filter.
+7. With network throttling, withdraw during companion loading and during YouTube API/player readiness. A late completion must not construct or observe a player while denied. Regrant should reuse initialization and report only current activity.
+8. Configure a separate activation type, deny tracking, and grant activation. Confirm no tracking starts and no inert iframe changes. With tracking granted and activation denied, the existing live iframe should still report playback. Activation is reserved for a later slice.
+
+The implementation uses Google's documented [consent APIs](https://developers.google.com/tag-platform/tag-manager/templates/api#addconsentlistener), [sandbox array methods](https://developers.google.com/tag-platform/tag-manager/templates/standard-library), and [permission model](https://developers.google.com/tag-platform/tag-manager/templates/permissions). Those references establish the intended API contract, not successful execution in this container.
+
+## Artifact and CDN
+
+Tested template SHA-256: `e6707b4d6b4db4d778d02a4a71416c2edb975519f2049b973fd02f6ceee0b7f2`.
+
+`npm run verify:cdn` passed at `2026-09-12T16:54:59.445Z`, comparing the pinned response with the committed and local companion. The 5,157-byte artifact has SHA-256 `d93e499a1635b633bf6d21963831fe0869e17590c69cebe1b1fecd0d3d793dee`.
+
+## Standards
+
+The review found that the linked GTM wizard still described six tests, a single native permission, and no configuration fields. Its instructions now cover 12 tests, seven native permissions, both input modes, and the issue #3 verification matrix. No actionable baseline code smells were found.
+
+## Spec
+
+One partial acceptance requirement remains: “Native permission behavior is checked through template/real GTM verification rather than inferred from mocked APIs.” Real GTM verification is pending. Native permission enforcement, imported field rendering, and boolean variable handling still need the editor and Preview checks above. Local modeled APIs and export assertions do not establish GTM enforcement. The draft PR preserves this outstanding work.
+
+No additional missing requirements, scope creep, or demonstrably incorrect implementation was found. The asynchronous callback rereads current tracking consent; native listeners reevaluate all requirements; explicit values require strict boolean `true`; repeated executions reuse state; and activation permission remains separate without activating iframes.
+
+Standards: one documentation finding corrected, no remaining findings. Spec: one outstanding verification requirement, no implementation defects found.

@@ -59,3 +59,28 @@ for (const wrapBridgeMessages of [false, true]) {
     await expect(page.locator('#event-count')).toHaveText('3 events. Newest first.');
   });
 }
+
+test('explicit demo publishes initial values and every grant or withdrawal with its update event', async ({ page }) => {
+  await page.route('https://**/*', route => route.fulfill({
+    body: new URL(route.request().url()).pathname === '/iframe_api' ? apiSource : '',
+    contentType: new URL(route.request().url()).pathname === '/iframe_api' ? 'text/javascript' : 'text/html',
+  }));
+  await page.goto('/?mode=explicit');
+  await expect.poll(() => page.evaluate(() => window.dataLayer.filter(item => item.event === 'tracker_demo_consent')
+    .map(item => item.tracker_analytics))).toEqual([false]);
+  await page.getByRole('button', {name: 'Grant analytics', exact: true}).click();
+  await expect.poll(() => page.evaluate(() => window.playerFixture?.players[0]?.listeners.size)).toBe(1);
+  await page.evaluate(() => window.playerFixture.players[0].play(20));
+  await page.getByRole('button', {name: 'Execute template again'}).click();
+  await page.getByRole('button', {name: 'Withdraw analytics', exact: true}).click();
+  await page.evaluate(() => {
+    window.playerFixture.players[0].pause();
+    window.playerFixture.players[0].play(70);
+  });
+  await expect(page.locator('#event-count')).toHaveText('1 event. Newest first.');
+  await page.getByRole('button', {name: 'Grant analytics', exact: true}).click();
+  await expect.poll(async () => JSON.parse(await page.locator('#events').textContent())
+    .map(event => event.video_current_time)).toEqual([70, 20]);
+  expect(await page.evaluate(() => window.dataLayer.filter(item => item.event === 'tracker_demo_consent')
+    .map(item => item.tracker_analytics))).toEqual([false, true, false, true]);
+});

@@ -25,7 +25,9 @@ for (const scenario of scenarios) {
         setItem: (key, value) => storage.set(key, value),
         clear: () => storage.clear(),
       },
-      addConsentListener() {}, injectScript() {}, callInWindow() {},
+      addConsentListener() {}, injectScript() {}, callInWindow() {}, logToConsole() {},
+      isConsentGranted: () => false,
+      getType: (value) => Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value,
     };
     const requireApi = (name) => {
       if (!mocks.has(name) && !(name in defaults)) throw new Error('Unmodelled API: ' + name);
@@ -61,7 +63,7 @@ for (const scenario of scenarios) {
 test('export uses the source bridge and one exact pinned URL with minimal permissions', async () => {
   const url = code.match(/https:\/\/cdn\.jsdelivr\.net\/gh\/GallardoCode\/gtm-consent-aware-youtube-tracker@[a-f0-9]{40}\/companion\/youtube-tracker\.js/)?.[0];
   assert.ok(url);
-  assert.equal(code, (await readFile('template/sandbox.js', 'utf8')).replace('__COMPANION_URL__', url).trim());
+  assert.equal(code, (await readFile('template/sandbox.js', 'utf8')).replace('__COMPANION_URL__', url).replace('__NATIVE_CONSENT_TYPES__', JSON.stringify(JSON.parse(await readFile('template/consent-types.json', 'utf8')))).trim());
   assert.equal(section('TESTS'), (await readFile('template/tests.yaml', 'utf8')).trim());
   const permissions = JSON.parse(section('WEB_PERMISSIONS'));
   const decode = (value) => value.type === 1 ? value.string : value.type === 8 ? value.boolean :
@@ -70,9 +72,33 @@ test('export uses the source bridge and one exact pinned URL with minimal permis
   const actual = Object.fromEntries(permissions.map(({ instance }) => [instance.key.publicId,
     Object.fromEntries(instance.param.map(({ key, value }) => [key, decode(value)]))]));
   assert.deepEqual(actual, {
-    access_consent: { consentTypes: [{ consentType: 'analytics_storage', read: true, write: false }] },
+    access_consent: { consentTypes: ['analytics_storage', 'ad_storage', 'ad_user_data', 'ad_personalization', 'functionality_storage', 'personalization_storage', 'security_storage'].map(consentType => ({consentType, read: true, write: false})) },
     inject_script: { urls: [url] },
     access_globals: { keys: [{ key: 'consentAwareYouTube', read: false, write: false, execute: true }] },
     access_template_storage: {},
+    logging: {environments: 'debug'},
   });
+});
+
+test('native selectors expose only declared read permissions and explicit selectors accept GTM variables', () => {
+  const fields = JSON.parse(section('TEMPLATE_PARAMETERS'));
+  const field = name => fields.find(field => field.name === name);
+  assert.equal(field('consentMode').defaultValue, 'native');
+  assert.deepEqual(field('consentMode').selectItems.map(item => item.value), ['native', 'explicit']);
+  const additional = field('additionalConsentTypes').simpleTableColumns[0];
+  assert.equal(additional.type, 'SELECT');
+  assert.equal(additional.name, 'consentType');
+  assert.deepEqual(additional.valueValidators, [{type: 'NON_EMPTY'}]);
+  assert.deepEqual(additional.selectItems.map(item => item.value), [
+    'ad_storage', 'ad_user_data', 'ad_personalization', 'functionality_storage', 'personalization_storage', 'security_storage',
+  ]);
+  assert.deepEqual(field('activationConsentType').selectItems.map(item => item.value), [
+    'none', 'analytics_storage', ...additional.selectItems.map(item => item.value),
+  ]);
+  for (const name of ['trackingGranted', 'activationGranted']) {
+    assert.equal(field(name).type, 'SELECT');
+    assert.equal(field(name).macrosInSelect, true);
+    assert.equal(field(name).simpleValueType, true);
+    assert.equal(field(name).defaultValue, false);
+  }
 });
