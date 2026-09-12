@@ -38,7 +38,7 @@ Standards: 0 remaining findings. Spec: 0 remaining findings.
 
 ## Remaining human verification
 
-The maintainer imported the corrected template and confirmed all six editor tests passing on 2026-09-12 at 13:53:42, as displayed by GTM. This confirms the test-isolation fix described below. Run Code and container Preview still need maintainer verification. Their prepared procedure is `bash scripts/verify-gtm.sh`. Complete it in a dedicated test workspace and retain its observations before treating this as a validated GTM installation. Account permission checks are not established by the local template runner or the real YouTube probe.
+The maintainer imported the corrected template and confirmed all six editor tests passing on 2026-09-12 at 13:53:42, as displayed by GTM. This confirms the test-isolation fix described below. The maintainer also reported a successful Run Code check at 13:55:03. Container Preview still needs maintainer verification. Their prepared procedure is `bash scripts/verify-gtm.sh`. Complete it in a dedicated test workspace and retain its observations before treating this as a validated GTM installation. Account permission checks are not established by the local template runner or the real YouTube probe.
 
 This is an implementation slice. No Gallery release or container publication was performed.
 
@@ -51,3 +51,5 @@ Each embedded scenario now calls `require('templateStorage').clear()` once befor
 The corrected template scenarios, export check, and 15 browser cases pass locally, 22 checks total. Type checking also passes. The maintainer then reran the corrected tests in Google's editor and reported `Executed 6 tests (SUCCESS)` at 13:53:42 on 2026-09-12. All six named scenarios passed. This is maintainer-supplied GTM evidence; mocked test calls still do not establish actual permission enforcement or playback behavior in container Preview.
 
 Updated template SHA-256: `073ed870cbac9adee0847fa5f8dcac4d908eeadd8cb2954eaca52f97488f8158`.
+
+The subsequent Run Code check, reported by the maintainer at 13:55:03 on 2026-09-12, printed `Test started` and `Executed 1 test (SUCCESS)`. This records successful editor execution. Live-page consent changes, companion delivery under container permissions, and playback output remain to be checked in Preview.
