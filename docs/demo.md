@@ -29,6 +29,8 @@ The tracker never sets site-wide consent. Native GTM treats unset consent types 
 
 ### Run the tests after import
 
+GTM keeps a copy of the `.tpl` file at import time. Editing or pushing the repository does not update that copy. After a template fix, open the existing Template Editor, use **More Actions > Import**, and select the updated root `template.tpl` again. For the test-isolation fix, expand the first test and confirm its first line is `require('templateStorage').clear();` before running the tests.
+
 Open **Templates** in the workspace's left navigation, then click the imported tracker under **Tag Templates**. In its Template Editor:
 
 1. Click **Tests**. Six tests should already be listed, starting with `Denied consent registers a watcher without loading` and ending with `A failed companion download can retry on the next execution`. Do not add new tests. An empty list means you should check that the complete root `template.tpl` was imported.
