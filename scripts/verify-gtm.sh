@@ -184,7 +184,7 @@ finish() {
 # Replace the example below. Set TOTAL_STAGES to match the stages you write.
 # ──────────────────────────────────────────────────────────────────────────
 
-TOTAL_STAGES=5
+TOTAL_STAGES=7
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 ENV_FILE=.env.gtm-demo
 
@@ -201,14 +201,34 @@ if [[ ! "$GTM_DEMO_CONTAINER" =~ ^GTM-[A-Z0-9]+$ ]]; then
 fi
 write_env GTM_DEMO_CONTAINER "$GTM_DEMO_CONTAINER"
 
-stage "Import the prepared template and exercise the sandbox"
-step "Templates > Tag Templates > New > More Actions > Import. Select this repository's template.tpl."
+stage "Open the imported template and inspect permissions"
+step "If already imported: click Templates in the workspace's left navigation, then the tracker under Tag Templates."
+step "Otherwise: Tag Templates > New > More Actions > Import. Select this repository's template.tpl."
+step "In the Template Editor, click Permissions."
 step "Permissions: analytics_storage read only; one exact jsDelivr URL; consentAwareYouTube execute only; template storage."
-step "Tests > Run Tests. All six scenarios must pass. Then use Run Code in the editor and inspect its console for permission errors."
+pause "Press Enter after checking the permissions."
+
+stage "Run the six imported tests inside GTM"
+step "Stay in the Template Editor and click the Tests tab. The imported file already contains six tests; do not click Add Test."
+step "The first test is 'Denied consent registers a watcher without loading'. The last is 'A failed companion download can retry on the next execution'."
+step "If the list is empty, stop and check that you imported the complete root template.tpl file, rather than pasting only its Code section."
+step "Click the play-triangle Run Tests button to run all enabled tests. Ensure none of the six tests is disabled."
+step "Read the results in the editor's Console panel. Expected: six tests run, all pass, zero failures."
+say "These tests supply their own consent values and simulate loading. You do not need to play a video, click Grant analytics, run npm, or create a tag for this step."
+step "If a test fails, expand its row using the arrow beside its name. Copy the failing test name and the full Console error."
+say "To rerun only that test, hover over its row and click the play triangle that appears."
+ask GTM_DEMO_TEST_RESULT "Record the test count and failures, or '6 passed, 0 failed':"
+write_env GTM_DEMO_TEST_RESULT "$GTM_DEMO_TEST_RESULT"
+confirm "Did GTM report all six tests passing with zero failures?" || exit 1
+
+stage "Run the template code in the editor"
+step "Click the Code tab in the same Template Editor. Leave the imported code unchanged."
+step "Click Run Code and inspect the editor's Console panel for compilation, runtime, or permission errors. This is separate from Run Tests."
+say "This slice has no configuration fields to fill in. A play event is not expected here because the editor is not the video demo page."
 say "Run Code may see unset consent as granted. Preview below must verify denied defaults and both consent transitions."
-ask GTM_DEMO_EDITOR_RESULT "Record the Tests and Run Code results, including any errors:"
+ask GTM_DEMO_EDITOR_RESULT "Record the Run Code outcome and any full Console error:"
 write_env GTM_DEMO_EDITOR_RESULT "$GTM_DEMO_EDITOR_RESULT"
-confirm "Did all six tests pass and Run Code complete without sandbox or permission errors?" || exit 1
+confirm "Did Run Code complete without compilation, runtime, or permission errors?" || exit 1
 step "Save the imported template."
 pause "Press Enter after saving."
 

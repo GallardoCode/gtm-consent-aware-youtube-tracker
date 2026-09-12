@@ -20,12 +20,24 @@ Open http://127.0.0.1:4173. The default demo uses the local companion, real YouT
 
 1. Run `bash scripts/verify-gtm.sh`. It guides the account and Preview steps and records your observations in ignored `.env.gtm-demo`. Keep the demo server running in another terminal.
 2. In a dedicated web-container workspace, open Templates, create a new tag template, and use the editor's More Actions menu to import root `template.tpl`. [Google's import example](https://codelabs.developers.google.com/codelabs/web-vitals-ga4-publisher)
-3. Inspect Permissions. Expect read access only to `analytics_storage`, script injection for one exact jsDelivr URL, execute access only to `consentAwareYouTube`, and template storage. Run the six embedded tests and the editor's Run Code check. Mocked tests bypass permissions, so also complete Preview. [Google's template tests](https://developers.google.com/tag-platform/tag-manager/templates/tests)
+3. Inspect Permissions. Expect read access only to `analytics_storage`, script injection for one exact jsDelivr URL, execute access only to `consentAwareYouTube`, and template storage. Follow [the editor test steps below](#run-the-tests-after-import) for the six imported tests and the separate Run Code check.
 4. Create one tag using this template. Fire on DOM Ready, all pages, with Once per event and Additional Consent Checks set to **No additional consent required**. Add a Custom Event trigger for `tracker_demo_repeat` to exercise the Repeat button. Tag success means the consent watcher is registered, not that YouTube is ready.
 5. Open Preview and connect to `http://127.0.0.1:4173/?gtm=GTM-YOURID`. The demo establishes denied page defaults before loading that container. This mode uses the real template and pinned CDN companion. Inspect the first tracker event's Consent tab. Grant, play, withdraw, and regrant using the page buttons. Inspect network attempts, iframe behavior, cookies, and data-layer events. [Google's Preview procedure](https://support.google.com/tagmanager/answer/6107056?hl=en)
 6. Repeat with `&consent=granted` and `&host=youtube.com`. In a separate test page, verify your CMP consent template's defaults on Consent Initialization and its saved-choice and withdrawal behavior. Keep that page's defaults coordinated with its CMP.
 
 The tracker never sets site-wide consent. Native GTM treats unset consent types as granted; the maintainer must establish defaults before any tracker execution. There is no extra explicit-grant or CMP-readiness gate. Follow the [pre-container defaults example and CMP alternative](developer-guide.md#1-set-consent-defaults-before-the-tracker-runs).
+
+### Run the tests after import
+
+Open **Templates** in the workspace's left navigation, then click the imported tracker under **Tag Templates**. In its Template Editor:
+
+1. Click **Tests**. Six tests should already be listed, starting with `Denied consent registers a watcher without loading` and ending with `A failed companion download can retry on the next execution`. Do not add new tests. An empty list means you should check that the complete root `template.tpl` was imported.
+2. Ensure all six tests are enabled, then click **Run Tests**, the button with a play triangle. It runs every enabled test. No local server, video playback, consent buttons, or tag configuration is needed for these simulated scenarios.
+3. Read the editor's **Console** results. Expect six tests run and zero failures. For a failure, expand the test row and copy its name and the full error. Hover over a row to reveal its individual play button if you want to rerun only that test. [Google's test controls](https://developers.google.com/tag-platform/tag-manager/templates/tests)
+4. Separately, click **Code**, leave the imported code unchanged, then click **Run Code**. This template has no configuration fields to fill in. Check the editor's Console for compilation, runtime, and permission errors. A video event is not expected in the editor. [Google's Run Code instructions](https://developers.google.com/tag-platform/tag-manager/templates)
+5. Record the two outcomes separately in the wizard. If either fails, retain the error before proceeding to tag configuration. If both pass, click **Save**.
+
+The six tests simulate the external APIs. Mocked calls bypass GTM permission checks, so their success does not replace the later container Preview checks.
 
 ## Existing iframe prerequisites
 
