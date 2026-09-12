@@ -7,11 +7,12 @@ const template = await readFile('template.tpl', 'utf8');
 const section = (name) => template.split(`___${name}___`)[1].split(/___[A-Z_]+___/)[0].trim();
 const code = section('SANDBOXED_JS_FOR_WEB_TEMPLATE');
 const scenarios = parse(section('TESTS')).scenarios;
+// GTM template storage survives between editor scenarios and runCode calls.
+const storage = new Map();
 
 // Run the exported tests with modelled GTM APIs; this is not Google's sandbox.
 for (const scenario of scenarios) {
   test(scenario.name, () => {
-    const storage = new Map();
     const mocks = new Map();
     const calls = new Map();
     const record = (name, args) => {
@@ -19,7 +20,11 @@ for (const scenario of scenarios) {
       calls.get(name).push(args);
     };
     const defaults = {
-      templateStorage: { getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value) },
+      templateStorage: {
+        getItem: (key) => storage.get(key),
+        setItem: (key, value) => storage.set(key, value),
+        clear: () => storage.clear(),
+      },
       addConsentListener() {}, injectScript() {}, callInWindow() {},
     };
     const requireApi = (name) => {
@@ -48,8 +53,8 @@ for (const scenario of scenarios) {
       isTrue: () => assert.equal(value, true),
       isFalse: () => assert.equal(value, false),
     });
-    new Function('mock', 'runCode', 'assertApi', 'assertThat', scenario.code)(
-      (name, value) => mocks.set(name, value), runCode, assertApi, assertThat);
+    new Function('require', 'mock', 'runCode', 'assertApi', 'assertThat', scenario.code)(
+      requireApi, (name, value) => mocks.set(name, value), runCode, assertApi, assertThat);
   });
 }
 

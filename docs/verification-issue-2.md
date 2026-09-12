@@ -38,6 +38,16 @@ Standards: 0 remaining findings. Spec: 0 remaining findings.
 
 ## Remaining human verification
 
-Actual GTM import, the six embedded tests inside Google's editor, Run Code, and container Preview have not been performed in an authenticated account. Their prepared procedure is `bash scripts/verify-gtm.sh`. Complete it in a dedicated test workspace and retain its observations before treating this as a validated GTM installation. Account permission checks are not established by the local template runner or the real YouTube probe.
+The maintainer imported the template and ran its six editor tests on 2026-09-12. Four failed because test scenarios shared initialization state; see the follow-up below. The corrected editor tests, Run Code, and container Preview still need maintainer verification. Their prepared procedure is `bash scripts/verify-gtm.sh`. Complete it in a dedicated test workspace and retain its observations before treating this as a validated GTM installation. Account permission checks are not established by the local template runner or the real YouTube probe.
 
 This is an implementation slice. No Gallery release or container publication was performed.
+
+## GTM editor follow-up, 2026-09-12
+
+The maintainer reported two non-function listener errors, a listener count of zero instead of one, and a download count of zero instead of two. Sharing template storage across the local runner's scenarios reproduced all four failures. The earlier runner had incorrectly allocated fresh storage for each scenario, masking the missing test setup.
+
+Each embedded scenario now calls `require('templateStorage').clear()` once before its first `runCode` call. Storage remains shared between calls within a scenario, so the repeated-execution checks still exercise initialization reuse. The local runner now retains storage across scenarios to catch this regression. This reset is test setup only; production initialization and the companion pin are unchanged. [Google's template storage API](https://developers.google.com/tag-platform/tag-manager/templates/api#templatestorage)
+
+The corrected template scenarios, export check, and 15 browser cases pass locally, 22 checks total. Type checking also passes. Reimport the updated root template into the same GTM Template Editor and rerun all six tests to confirm in Google's sandbox.
+
+Updated template SHA-256: `073ed870cbac9adee0847fa5f8dcac4d908eeadd8cb2954eaca52f97488f8158`.

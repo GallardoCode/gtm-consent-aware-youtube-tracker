@@ -225,6 +225,7 @@ ___TESTS___
 scenarios:
 - name: Denied consent registers a watcher without loading
   code: |-
+    require('templateStorage').clear();
     mock('isConsentGranted', false);
     runCode({});
     assertApi('addConsentListener').wasCalled();
@@ -233,6 +234,7 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
 - name: A saved grant loads and calls the named bridge
   code: |-
+    require('templateStorage').clear();
     mock('isConsentGranted', true);
     mock('injectScript', function(url, success) { success(); });
     runCode({});
@@ -240,6 +242,7 @@ scenarios:
     assertApi('callInWindow').wasCalledWith('consentAwareYouTube', true);
 - name: Later grant and withdrawal both reach the companion
   code: |-
+    require('templateStorage').clear();
     let granted = false;
     let listener;
     mock('isConsentGranted', function() { return granted; });
@@ -257,6 +260,7 @@ scenarios:
     assertApi('callInWindow').wasCalledWith('consentAwareYouTube', false);
 - name: Download completion reads current consent after withdrawal
   code: |-
+    require('templateStorage').clear();
     let granted = true;
     let loaded;
     let listener;
@@ -270,6 +274,7 @@ scenarios:
     assertApi('callInWindow').wasCalledWith('consentAwareYouTube', false);
 - name: Repeat execution reuses the watcher and pending download
   code: |-
+    require('templateStorage').clear();
     let listeners = 0;
     let downloads = 0;
     mock('isConsentGranted', true);
@@ -281,6 +286,7 @@ scenarios:
     assertThat(downloads).isEqualTo(1);
 - name: A failed companion download can retry on the next execution
   code: |-
+    require('templateStorage').clear();
     let downloads = 0;
     mock('isConsentGranted', true);
     mock('injectScript', function(url, success, failure) { downloads++; failure(); });
