@@ -4,7 +4,7 @@ The issue #3 implementation adds explicit CMP booleans, additional native tracki
 
 ## Automated checks
 
-On 2026-09-12, Node.js 24.18.0 ran the exported template scenarios and Playwright 1.63.0 ran Chromium through the exported template-to-companion boundary. The focused consent suite passed 21 cases and the demo suite passed three cases. Type checking passed. Final full-suite and review results are recorded below when complete.
+On 2026-09-12, Node.js 24.18.0 ran the exported template scenarios and Playwright 1.63.0 ran Chromium through the exported template-to-companion boundary. The focused consent suite passed 21 cases and the demo suite passed three cases. Type checking passed. The final full suite passed all 14 local template checks and all 24 browser tests. `git diff --check` and `bash -n scripts/verify-gtm.sh` passed.
 
 The consent cases cover multiple native requirements, partial grants, withdrawal of each requirement, saved and unset native consent, strict explicit boolean validation before and after grant, saved explicit consent, repeated execution, independent activation permission, and explicit withdrawal during companion, API, and player loading. Export checks inspect native field choices and read-only permission declarations. The 12 embedded scenarios are also exported for execution in GTM's Template Editor.
 
@@ -26,3 +26,21 @@ Use a dedicated test workspace and the current root `template.tpl`. Follow the [
 8. Configure a separate activation type, deny tracking, and grant activation. Confirm no tracking starts and no inert iframe changes. With tracking granted and activation denied, the existing live iframe should still report playback. Activation is reserved for a later slice.
 
 The implementation uses Google's documented [consent APIs](https://developers.google.com/tag-platform/tag-manager/templates/api#addconsentlistener), [sandbox array methods](https://developers.google.com/tag-platform/tag-manager/templates/standard-library), and [permission model](https://developers.google.com/tag-platform/tag-manager/templates/permissions). Those references establish the intended API contract, not successful execution in this container.
+
+## Artifact and CDN
+
+Tested template SHA-256: `e6707b4d6b4db4d778d02a4a71416c2edb975519f2049b973fd02f6ceee0b7f2`.
+
+`npm run verify:cdn` passed at `2026-09-12T16:54:59.445Z`, comparing the pinned response with the committed and local companion. The 5,157-byte artifact has SHA-256 `d93e499a1635b633bf6d21963831fe0869e17590c69cebe1b1fecd0d3d793dee`.
+
+## Standards
+
+The review found that the linked GTM wizard still described six tests, a single native permission, and no configuration fields. Its instructions now cover 12 tests, seven native permissions, both input modes, and the issue #3 verification matrix. No actionable baseline code smells were found.
+
+## Spec
+
+One partial acceptance requirement remains: “Native permission behavior is checked through template/real GTM verification rather than inferred from mocked APIs.” Real GTM verification is pending. Native permission enforcement, imported field rendering, and boolean variable handling still need the editor and Preview checks above. Local modeled APIs and export assertions do not establish GTM enforcement. The draft PR preserves this outstanding work.
+
+No additional missing requirements, scope creep, or demonstrably incorrect implementation was found. The asynchronous callback rereads current tracking consent; native listeners reevaluate all requirements; explicit values require strict boolean `true`; repeated executions reuse state; and activation permission remains separate without activating iframes.
+
+Standards: one documentation finding corrected, no remaining findings. Spec: one outstanding verification requirement, no implementation defects found.
